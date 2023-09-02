@@ -1,4 +1,13 @@
-import { Body, Controller, Delete, Param, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  Query,
+} from '@nestjs/common';
 import { ApiService } from './api.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/udate-category.dto';
@@ -7,9 +16,14 @@ import { UpdateCategoryDto } from './dto/udate-category.dto';
 export class ApiController {
   constructor(private readonly _apiService: ApiService) {}
 
+  @Get('/categories')
+  async getCategory(@Query() query) {
+    return this._apiService.getCategory(query);
+  }
+
   @Post('/categories/create')
-  async createCategory(@Body() dto: CreateCategoryDto) {
-    return this._apiService.createCategory(dto);
+  async createCategory(@Body() body: CreateCategoryDto) {
+    return this._apiService.createCategory(body);
   }
 
   @Delete('/categories/:id')
@@ -18,7 +32,7 @@ export class ApiController {
   }
 
   @Put('/categories/update')
-  async updateCategory(@Body() dto: UpdateCategoryDto) {
-    return this._apiService.updateCategory(dto);
+  async updateCategory(@Body() body: UpdateCategoryDto) {
+    return this._apiService.updateCategory(body);
   }
 }

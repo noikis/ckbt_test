@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   InternalServerErrorException,
@@ -9,6 +10,7 @@ import { CategoryEntity } from 'src/database/entities/category.entity';
 import { spaceToHyphen } from 'src/utils';
 import { Repository } from 'typeorm';
 import { CreateCategoryDto } from './dto/create-category.dto';
+import { GetCategoryDto } from './dto/get-category.dto';
 import { UpdateCategoryDto } from './dto/udate-category.dto';
 
 @Injectable()
@@ -17,6 +19,23 @@ export class ApiService {
     @InjectRepository(CategoryEntity)
     private readonly _categoryRepository: Repository<CategoryEntity>,
   ) {}
+
+  async getCategory({ id, slug }: GetCategoryDto) {
+    if (!id && !slug) {
+      throw new BadRequestException('Neither id nor slug');
+    }
+
+    let category: CategoryEntity;
+    if (id) {
+      category = await this._categoryRepository.findOneBy({ id });
+    } else {
+      category = await this._categoryRepository.findOneBy({ slug });
+    }
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
+    return category;
+  }
 
   async createCategory(dto: CreateCategoryDto) {
     const transformedSlug = spaceToHyphen(dto.slug);
