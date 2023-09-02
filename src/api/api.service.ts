@@ -7,10 +7,11 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CategoryEntity } from 'src/database/entities/category.entity';
-import { spaceToHyphen } from 'src/utils';
+import { changeCyrilicE, spaceToHyphen } from 'src/utils';
 import { Repository } from 'typeorm';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { GetCategoryDto } from './dto/get-category.dto';
+import { GetFilteredCategoriesDto } from './dto/get-filtered-categories.dto';
 import { UpdateCategoryDto } from './dto/udate-category.dto';
 
 @Injectable()
@@ -78,5 +79,37 @@ export class ApiService {
       throw new InternalServerErrorException('Category not updated');
     }
     return { ...category, ...dto };
+  }
+
+  async getFilteredCategories(dto: GetFilteredCategoriesDto) {
+    const { name, description, search, sort, page, pageSize } = dto;
+
+    const builder =
+      await this._categoryRepository.createQueryBuilder('category_entity');
+
+    if ('name' in dto && !dto.search) {
+      builder.where(
+        'LOWER(category_entity.name) IN (LOWER(:name), LOWER(:cyrilic))',
+        { name, cyrilic: changeCyrilicE(name) },
+      );
+    }
+
+    if ('description' in dto && !dto.search) {
+      builder.where(
+        'LOWER(category_entity.description) LIKE LOWER(:description) OR LOWER(category_entity.description) LIKE LOWER(:cyrilic)',
+        {
+          description: `%${description}%`,
+          cyrilic: `%${changeCyrilicE(description)}%`,
+        },
+      );
+    }
+
+    if ('active' in dto) {
+      // class-validator filter "active" to be one of [ '0', '1', 'true', 'false'
+      const active = dto.active === 'true' || dto.active === '1';
+      builder.andWhere('category_entity.active = :active', { active });
+    }
+
+    return builder.getMany();
   }
 }
