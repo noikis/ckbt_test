@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CategoryEntity } from 'src/database/entities/category.entity';
-import { changeCyrilicE, spaceToHyphen } from 'src/utils';
+import { changeCyrilicE, sortByCategory, spaceToHyphen } from 'src/utils';
 import { Repository } from 'typeorm';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { GetCategoryDto } from './dto/get-category.dto';
@@ -82,8 +82,7 @@ export class ApiService {
   }
 
   async getFilteredCategories(dto: GetFilteredCategoriesDto) {
-    const { name, description, search, sort, page, pageSize } = dto;
-
+    const { name, description, search } = dto;
     const builder =
       await this._categoryRepository.createQueryBuilder('category_entity');
 
@@ -96,10 +95,24 @@ export class ApiService {
 
     if ('description' in dto && !dto.search) {
       builder.where(
-        'LOWER(category_entity.description) LIKE LOWER(:description) OR LOWER(category_entity.description) LIKE LOWER(:cyrilic)',
+        `LOWER(category_entity.description) LIKE LOWER(:description)
+         OR LOWER(category_entity.description) LIKE LOWER(:cyrilic)`,
         {
           description: `%${description}%`,
           cyrilic: `%${changeCyrilicE(description)}%`,
+        },
+      );
+    }
+
+    if (dto.search) {
+      builder.where(
+        `LOWER(category_entity.name) LIKE LOWER(:search)
+         OR LOWER(category_entity.name) LIKE LOWER(:cyrilic) 
+         OR LOWER(category_entity.description) LIKE LOWER(:search)
+         OR LOWER(category_entity.description) LIKE LOWER(:cyrilic)`,
+        {
+          search: `%${search}%`,
+          cyrilic: `%${changeCyrilicE(search)}%`,
         },
       );
     }
@@ -109,6 +122,19 @@ export class ApiService {
       const active = dto.active === 'true' || dto.active === '1';
       builder.andWhere('category_entity.active = :active', { active });
     }
+
+    // pagination
+    const pageSize = dto.pageSize ? parseInt(dto.pageSize) : 2;
+    builder.take(pageSize);
+
+    // dto.page = [ '0' , ... , 'n']
+    const page = !dto.page || dto.page === '0' ? 1 : parseInt(dto.page);
+    builder.skip(pageSize * (page - 1));
+
+    // sorting
+    const sort = dto.sort ?? '-createdAt';
+    const { attribute, order } = sortByCategory(sort);
+    builder.orderBy(`category_entity.${attribute}`, order);
 
     return builder.getMany();
   }

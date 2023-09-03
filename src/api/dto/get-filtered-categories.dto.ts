@@ -15,7 +15,7 @@ export class IsStringifiedInteger implements ValidatorConstraintInterface {
   validate(str: string) {
     const num = parseInt(str);
     const isNumber = !isNaN(num);
-    const isPositive = num > 0;
+    const isPositive = num >= 0;
     return isNumber && isPositive;
   }
 
@@ -67,7 +67,7 @@ export class GetFilteredCategoriesDto {
     nullable: true,
   })
   @IsString()
-  @IsIn(generateNumbersStringified(10))
+  @IsIn(generateNumbersStringified(9))
   @IsOptional()
   pageSize?: string;
 
