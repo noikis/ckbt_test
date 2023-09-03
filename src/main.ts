@@ -17,7 +17,7 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, docsConfig);
-  document.servers = [{ url: '/api' }];
+  document.servers = [{ url: '/' }];
   SwaggerModule.setup('api/documentation', app, document);
 
   await app.listen(port, host, () => {

@@ -6,7 +6,7 @@ export class GetCategoryDto {
   @ApiProperty({
     description: 'primary key (uuid)',
     uniqueItems: true,
-    required: true,
+    required: false,
   })
   @IsString()
   @IsOptional()

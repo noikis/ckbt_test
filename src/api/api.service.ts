@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CategoryEntity } from 'src/database/entities/category.entity';
+import { CategoryType } from 'src/types';
 import { changeCyrilicE, sortByCategory, spaceToHyphen } from 'src/utils';
 import { Repository } from 'typeorm';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -21,7 +22,7 @@ export class ApiService {
     private readonly _categoryRepository: Repository<CategoryEntity>,
   ) {}
 
-  async getCategory({ id, slug }: GetCategoryDto) {
+  async getCategory({ id, slug }: GetCategoryDto): Promise<CategoryType> {
     if (!id && !slug) {
       throw new BadRequestException('Neither id nor slug');
     }
@@ -38,7 +39,7 @@ export class ApiService {
     return category;
   }
 
-  async createCategory(dto: CreateCategoryDto) {
+  async createCategory(dto: CreateCategoryDto): Promise<CategoryType> {
     const transformedSlug = spaceToHyphen(dto.slug);
     const categoryWithSameSlug = await this._categoryRepository.count({
       where: { slug: transformedSlug },
@@ -56,7 +57,7 @@ export class ApiService {
       ...dto,
       slug: transformedSlug,
     };
-    return result;
+    return result as CategoryType;
   }
 
   async deleteCategory(id: string): Promise<true> {
@@ -67,7 +68,7 @@ export class ApiService {
     return true;
   }
 
-  async updateCategory(dto: UpdateCategoryDto) {
+  async updateCategory(dto: UpdateCategoryDto): Promise<CategoryType> {
     const { id } = dto;
     const category = await this._categoryRepository.findOneBy({ id });
     if (!category) {
@@ -81,7 +82,9 @@ export class ApiService {
     return { ...category, ...dto };
   }
 
-  async getFilteredCategories(dto: GetFilteredCategoriesDto) {
+  async getFilteredCategories(
+    dto: GetFilteredCategoriesDto,
+  ): Promise<CategoryType[]> {
     const { name, description, search } = dto;
     const builder =
       await this._categoryRepository.createQueryBuilder('category_entity');
